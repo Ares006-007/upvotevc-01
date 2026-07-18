@@ -42,6 +42,21 @@ Start the local server:
 npm run dev
 ```
 
+### 4. Running Tests
+
+This project uses Vitest for unit and integration testing. We test domain logic, client ingestion parsing (using mocked fetch requests), and Next.js API routes without booting a full server.
+
+```bash
+# Run all tests
+npm run test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests and generate a coverage report
+npm run test:coverage
+```
+
 ## API Usage Examples
 
 **Get Signals:**

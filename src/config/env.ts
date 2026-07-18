@@ -13,8 +13,8 @@ const parsed = envSchema.safeParse(process.env);
 let envData: z.infer<typeof envSchema>;
 
 if (!parsed.success) {
-  if (process.env.npm_lifecycle_event === 'build') {
-    console.warn("⚠️ Skipping env validation during Next.js build phase.");
+  if (process.env.npm_lifecycle_event === 'build' || process.env.NODE_ENV === 'test') {
+    console.warn("⚠️ Skipping env validation during Next.js build or test phase.");
     envData = process.env as any;
   } else {
     console.error("❌ Invalid environment variables:", JSON.stringify(parsed.error.format(), null, 2));
