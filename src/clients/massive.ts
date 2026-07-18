@@ -15,6 +15,11 @@ export class MassiveClient {
         }
       });
 
+      if (response.status === 403) {
+        logger.warn(`Massive API 403 Forbidden for ${symbol}. The current API plan likely does not include forex/real-time entitlements.`);
+        return [];
+      }
+
       if (!response.ok) {
         logger.error(`Massive API error: ${response.status}`);
         return [];

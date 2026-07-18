@@ -30,7 +30,16 @@ async function checkEndpoint(
     const res = await fetch(url, options);
     
     if (res.status === 401 || res.status === 403) {
-      console.log(`❌ FAIL [${res.status}]: Auth failed. API Key might be invalid or expired.`);
+      console.log(`❌ FAIL [${res.status}]: Auth failed or Forbidden.`);
+      const text = await res.text();
+      
+      if (res.status === 403 && text.includes("entitled")) {
+        console.log(`   Note: The endpoint is correct, but your API Key plan does NOT include access to this data (e.g. Forex). Upgrade required.`);
+        console.log(`   Response: ${text.slice(0, 150)}`);
+      } else {
+        console.log(`   Response: ${text.slice(0, 150)}`);
+      }
+      
       hasFailures = true;
       return;
     }

@@ -67,6 +67,8 @@ To verify that your real API keys (`.env.local`) are valid and the external prov
 npm run smoke:apis
 ```
 
+> **Note on Massive API Forex Errors**: If the smoke test passes for Stock/Reference but fails for Forex with a `403 Forbidden` error, the endpoint format is correct but your Massive API key tier does not include real-time Forex entitlements. The backend is built to catch this gracefully.
+
 ## API Usage Examples
 
 **Get Signals:**
