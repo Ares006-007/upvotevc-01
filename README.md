@@ -59,6 +59,14 @@ npm run test:coverage
 
 > **Testing Policy**: We enforce a minimum coverage standard of ~80% lines for core services (`src/clients` and `src/domain`). Tests mock external APIs to ensure they remain hermetic, fast, and offline-capable.
 
+### 5. Live API Smoke Tests
+
+To verify that your real API keys (`.env.local`) are valid and the external providers are online, run the live smoke test script. **This makes real network requests and is not a mocked test.**
+
+```bash
+npm run smoke:apis
+```
+
 ## API Usage Examples
 
 **Get Signals:**
