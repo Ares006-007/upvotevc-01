@@ -41,4 +41,15 @@ describe('API Route: /api/signals', () => {
     expect(json).toHaveLength(1);
     expect(json[0].id).toBe('1');
   });
+
+  it('should return 500 when an internal error occurs', async () => {
+    vi.spyOn(SignalService, 'getAggregatedSignals').mockRejectedValueOnce(new Error('Internal failure'));
+
+    const request = new Request('http://localhost/api/signals?limit=5');
+    const response = await GET(request);
+    
+    expect(response.status).toBe(500);
+    const json = await response.json();
+    expect(json.error).toBe('Internal Server Error');
+  });
 });

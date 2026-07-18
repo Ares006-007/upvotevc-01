@@ -47,6 +47,15 @@ describe('API Route: /api/reddit', () => {
       expect(json.subreddit).toBe('startups');
       expect(json.data).toHaveLength(1);
     });
+
+    it('should return 500 when fetch fails internally', async () => {
+      vi.spyOn(RedditJsonClient, 'fetchSubredditPosts').mockRejectedValueOnce(new Error('Internal'));
+
+      const request = new Request('http://localhost/api/reddit/subreddit?name=startups&sort=hot');
+      const response = await SubredditGET(request);
+      
+      expect(response.status).toBe(500);
+    });
   });
 
   describe('GET /api/reddit/thread', () => {
@@ -80,5 +89,15 @@ describe('API Route: /api/reddit', () => {
       expect(json.post_id).toBe('p1');
       expect(json.data).toHaveLength(1);
     });
+
+    it('should return 500 when fetch fails internally', async () => {
+      vi.spyOn(RedditJsonClient, 'fetchPostComments').mockRejectedValueOnce(new Error('Internal'));
+
+      const request = new Request('http://localhost/api/reddit/thread?subreddit=startups&postId=p1');
+      const response = await ThreadGET(request);
+      
+      expect(response.status).toBe(500);
+    });
   });
 });
+

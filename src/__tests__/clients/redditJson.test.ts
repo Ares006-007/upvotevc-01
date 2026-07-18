@@ -100,4 +100,96 @@ describe('RedditJsonClient', () => {
     expect(comments[1].comment_id).toBe('comment2');
     expect(comments[1].depth).toBe(1);
   });
+
+  it('should handle non-OK responses for post comments', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValueOnce(new Response('Error', { status: 404 }));
+
+    const comments = await RedditJsonClient.fetchPostComments('testsub', 'invalid');
+    expect(comments).toEqual([]);
+  });
+
+  it('should handle malformed thread payloads gracefully', async () => {
+    const mockResponse = { data: 'not an array' }; // Invalid structure for threads
+    vi.spyOn(global, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify(mockResponse), { status: 200 }));
+
+    const comments = await RedditJsonClient.fetchPostComments('testsub', 'post1');
+    expect(comments).toEqual([]);
+  });
+
+  it('should handle network errors for post comments gracefully', async () => {
+    vi.spyOn(global, 'fetch').mockRejectedValueOnce(new Error('Network failure'));
+
+    const comments = await RedditJsonClient.fetchPostComments('testsub', 'post1');
+    expect(comments).toEqual([]);
+  });
+
+  it('should fetch posts and comments together successfully via fetchSubredditWithComments', async () => {
+    // Mock the post fetch
+    vi.spyOn(global, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              children: [
+                {
+                  data: {
+                    id: 'post1',
+                    subreddit: 'testsub',
+                    title: 'Title',
+                    selftext: 'Body',
+                    author: 'user1',
+                    score: 100,
+                    num_comments: 1,
+                    created_utc: 1000,
+                    permalink: '/r/testsub/comments/post1/',
+                    url: 'url'
+                  }
+                }
+              ]
+            }
+          }),
+          { status: 200 }
+        )
+      )
+      // Mock the comments fetch
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify([
+            {}, // Post block
+            {
+              data: {
+                children: [
+                  {
+                    kind: 't1',
+                    data: {
+                      id: 'comment1',
+                      author: 'user2',
+                      body: 'Comment',
+                      score: 10,
+                      created_utc: 1001,
+                      parent_id: 't3_post1'
+                    }
+                  }
+                ]
+              }
+            }
+          ]),
+          { status: 200 }
+        )
+      );
+
+    const threads = await RedditJsonClient.fetchSubredditWithComments('testsub', 'hot', 1);
+    
+    expect(threads).toHaveLength(1);
+    expect(threads[0].post.post_id).toBe('post1');
+    expect(threads[0].comments).toHaveLength(1);
+    expect(threads[0].comments[0].comment_id).toBe('comment1');
+  });
+
+  it('should gracefully handle errors in fetchSubredditWithComments', async () => {
+    vi.spyOn(global, 'fetch').mockRejectedValueOnce(new Error('Network failure'));
+
+    const threads = await RedditJsonClient.fetchSubredditWithComments('testsub');
+    expect(threads).toEqual([]);
+  });
 });

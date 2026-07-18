@@ -56,4 +56,35 @@ describe('NewsApiClient', () => {
     expect(signals).toHaveLength(1);
     expect(signals[0].text).toBe(''); // Defaults to empty string
   });
+
+  it('should handle non-OK responses gracefully', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValueOnce(new Response('Error', { status: 401 }));
+
+    const signals = await NewsApiClient.fetchNews('startups');
+    expect(signals).toEqual([]);
+  });
+
+  it('should handle malformed article payloads safely', async () => {
+    const mockResponse = {
+      articles: [
+        {
+          source: null, // missing required nested data structurally or causing parse issues
+          title: 123, // Invalid type
+          url: 'https://example.com'
+        }
+      ]
+    };
+
+    vi.spyOn(global, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify(mockResponse), { status: 200 }));
+
+    const signals = await NewsApiClient.fetchNews('startups');
+    expect(signals).toEqual([]);
+  });
+
+  it('should gracefully handle network failures', async () => {
+    vi.spyOn(global, 'fetch').mockRejectedValueOnce(new Error('Network failure'));
+
+    const signals = await NewsApiClient.fetchNews('startups');
+    expect(signals).toEqual([]);
+  });
 });
