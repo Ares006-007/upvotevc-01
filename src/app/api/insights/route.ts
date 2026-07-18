@@ -6,7 +6,9 @@ import { z } from 'zod';
 import { logger } from '@/utils/logger';
 
 const RequestSchema = z.object({
-  signals: z.array(SignalSchema).optional()
+  signals: z.array(SignalSchema).optional(),
+  query: z.string().optional(),
+  mode: z.enum(['search', 'autofind']).optional()
 });
 
 export async function POST(request: Request) {
@@ -19,8 +21,18 @@ export async function POST(request: Request) {
     }
 
     let signalsToAnalyze = parseResult.data.signals || [];
+    
+    // If no signals provided manually, fetch them
     if (signalsToAnalyze.length === 0) {
-      signalsToAnalyze = await SignalService.getAggregatedSignals({ limit: 10 });
+      const mode = parseResult.data.mode || 'autofind';
+      const query = mode === 'search' && parseResult.data.query 
+        ? parseResult.data.query 
+        : 'venture capital startup problems';
+        
+      signalsToAnalyze = await SignalService.getAggregatedSignals({ 
+        limit: 15,
+        query: query
+      });
     }
 
     const insight = await InsightService.generateInsightFromSignals(signalsToAnalyze);

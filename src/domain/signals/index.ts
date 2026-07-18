@@ -14,9 +14,13 @@ export class SignalService {
     const limit = options?.limit || 5;
     const query = options?.query || 'venture capital';
     
+    // Basic parsing: if query includes r/something, use that subreddit. Otherwise default.
+    const redditMatch = query.match(/r\/([a-zA-Z0-9_]+)/);
+    const subreddit = redditMatch ? redditMatch[1] : 'startups';
+
     // Fetch from all sources concurrently
     const [redditPosts, newsSignals, marketSignals] = await Promise.all([
-      RedditJsonClient.fetchSubredditPosts('wallstreetbets', 'hot', limit),
+      RedditJsonClient.fetchSubredditPosts(subreddit, 'hot', limit),
       NewsApiClient.fetchNews(query, limit),
       MassiveClient.fetchMarketData('SPY') // Placeholder
     ]);
