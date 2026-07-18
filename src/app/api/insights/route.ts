@@ -1,27 +1,27 @@
 import { NextResponse } from 'next/server';
-import { InsightSummary } from '@/lib/types';
+import { InsightService } from '@/domain/insights';
+import { SignalSchema } from '@/dto/schemas';
+import { z } from 'zod';
+import { logger } from '@/utils/logger';
+
+const RequestSchema = z.object({
+  signals: z.array(SignalSchema)
+});
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    
-    // In a real implementation, you would pass `body.signals` to Hack Club AI here.
-    
-    const mockInsight: InsightSummary = {
-      summary: "Market sentiment is largely positive on AI advancements but cautious regarding macroeconomic inflation data. Tech stocks appear resilient.",
-      riskFactors: [
-        "Delayed Fed rate cuts could dampen broader market enthusiasm.",
-        "High valuation multiples in the AI sector require sustained growth."
-      ],
-      opportunities: [
-        "Emerging startups in the AI infrastructure space.",
-        "Potential dips in blue-chip tech stocks presenting buying opportunities."
-      ],
-      sentimentScore: 0.65,
-    };
+    const parseResult = RequestSchema.safeParse(body);
 
-    return NextResponse.json(mockInsight);
+    if (!parseResult.success) {
+      return NextResponse.json({ error: 'Invalid request payload', details: parseResult.error.format() }, { status: 400 });
+    }
+
+    const insight = await InsightService.generateInsightFromSignals(parseResult.data.signals);
+
+    return NextResponse.json(insight);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to generate insights.' }, { status: 500 });
+    logger.error('Unhandled error in POST /api/insights', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

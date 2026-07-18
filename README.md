@@ -2,11 +2,22 @@
 
 Investor intelligence platform combining public discussion data (Reddit), news (NewsAPI), and market data (Massive) with Hack Club AI summaries.
 
+## Backend Architecture
+
+This backend follows a layered architecture focused on separation of concerns, built on top of Next.js App Router for API handling:
+
+- `src/config/`: Zod validation for runtime environment variables. Fail-fast approach.
+- `src/clients/`: External API wrappers (`reddit.ts`, `newsapi.ts`, `massive.ts`, `hackclubAi.ts`) with exponential backoff and retry logic.
+- `src/domain/`: Core business logic (`signals`, `insights`) orchestrating normalization and AI aggregation.
+- `src/dto/`: Zod schemas mapping to typescript interfaces to validate inputs and boundaries.
+- `src/utils/`: Shared structured logger and retry implementations.
+- `src/app/api/`: Thin route handlers mapping to domain functions.
+
 ## Getting Started
 
 ### 1. Environment Variables
 
-Create a `.env.local` file in the root directory and add the following keys (do not commit this file):
+Create a `.env.local` (or copy `.env.example`) in the root directory and add the following keys. **Do not commit real keys.**
 
 ```bash
 REDDIT_API_KEY=your_reddit_key
@@ -31,16 +42,31 @@ Start the local server:
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## API Usage Examples
 
-## Architecture
+**Get Signals:**
+```bash
+curl -X GET "http://localhost:3000/api/signals?limit=5&query=stocks"
+```
 
-- **Framework:** Next.js (App Router)
-- **Styling:** Vanilla CSS (Tailwind CSS intentionally excluded to adhere to exact design tokens)
-- **Data Fetching:** Next.js API Routes (`/api/signals`, `/api/insights`)
-- **Design System:** ElevenLabs editorial style (Waldenburg 300 / Inter)
+**Generate Insights:**
+```bash
+curl -X POST http://localhost:3000/api/insights \
+  -H "Content-Type: application/json" \
+  -d '{
+    "signals": [
+      {
+        "id": "reddit-123",
+        "source": "reddit",
+        "assetType": "stock",
+        "title": "Example Post",
+        "tags": ["retail"],
+        "createdAt": "2024-01-01T00:00:00Z",
+        "ingestedAt": "2024-01-01T00:00:00Z"
+      }
+    ]
+  }'
+```
 
-## Future Work
-
-- Wire up the mock API endpoints to real data sources.
-- Extend the AI analysis pipeline to generate dynamic risk factors.
+## Background Processing
+*Note:* Periodic fetching from these external endpoints can be orchestrated using a Vercel Cron Job hitting an internal authenticated endpoint, avoiding tying up standard synchronous API routes.
