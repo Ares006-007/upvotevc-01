@@ -5,60 +5,69 @@ import { logger } from '../../../utils/logger';
 export class AgentOrchestrator {
   /**
    * Runs the multi-agent pipeline:
-   * Scout -> Analyst -> (Market & Validation & Historian & Risk) -> Synthesizer
+   * Thread Reader -> Emotion & Impact -> Pain Point -> 
+   * (Market Research & Opportunity/Pitch & Market Reach & Risk) -> Synthesizer
    */
   static async runResearchPipeline(signals: SignalDTO[]): Promise<VentureOpportunityDTO[]> {
     if (!signals.length) return [];
 
-    logger.info(`Starting Multi-Agent Research Pipeline with ${signals.length} signals...`);
+    logger.info(`Starting 8-Agent Research Pipeline with ${signals.length} signals...`);
     const rawDataStr = JSON.stringify(signals.map(s => ({
       source: s.source,
       title: s.title,
       text: s.text,
-      tags: s.tags
+      tags: s.tags,
+      url: s.url
     })));
 
     try {
-      // 1. Scout Agent
-      logger.info('Agent 1/7: Scout running...');
-      const scoutOutput = await HackClubAiClient.completion(
-        "You are the Scout Agent. Your job is to read raw signals and extract the 1-2 most painful recurring themes and exact verbatim quotes that prove the pain. Output only the core themes and quotes.",
+      // 1. Thread Reader Agent
+      logger.info('Agent 1/8: Thread Reader running...');
+      const threadReaderOutput = await HackClubAiClient.completion(
+        "You are the Thread Reader Agent. Read the provided Reddit post/comments or news signals. Identify the main complaint, who is affected, the context, and extract notable exact quotes.",
         `Analyze these signals:\n\n${rawDataStr}`
       );
 
-      // 2. Analyst Agent
-      logger.info('Agent 2/7: Analyst running...');
-      const analystOutput = await HackClubAiClient.completion(
-        "You are the Pattern Analyst Agent. Given the Scout's extracted pain points, you must cluster them and score the severity (1-10) based on emotional intensity and frequency. Output your analysis clearly.",
-        `Scout's report:\n\n${scoutOutput}`
+      // 2. Emotion & Impact Agent
+      logger.info('Agent 2/8: Emotion & Impact running...');
+      const emotionOutput = await HackClubAiClient.completion(
+        "You are the Emotion & Impact Agent. Based on the Thread Reader's report, detect emotion type, emotion intensity, urgency, and whether the pain is personal, recurring, or broad. Judge if it is costly in time, money, stress, or status.",
+        `Thread Reader's report:\n\n${threadReaderOutput}`
       );
 
-      // 3-6. Parallel Agents (Market, Validation, Historian, Risk)
-      logger.info('Agents 3-6/7: Parallel analysis running (Market, Validation, Historian, Risk)...');
+      // 3. Pain Point Agent
+      logger.info('Agent 3/8: Pain Point running...');
+      const painPointOutput = await HackClubAiClient.completion(
+        "You are the Pain Point Agent. Convert the previous reports into a core pain statement, problem category, and a severity score (1-10). Provide an evidence-backed explanation.",
+        `Thread Reader's report:\n\n${threadReaderOutput}\n\nEmotion & Impact report:\n\n${emotionOutput}`
+      );
+
+      // 4-7. Parallel Agents (Market Research, Pitch, Reach, Risk)
+      logger.info('Agents 4-7/8: Parallel analysis running...');
       
-      const [marketOutput, validationOutput, historianOutput, riskOutput] = await Promise.all([
+      const [marketOutput, pitchOutput, reachOutput, riskOutput] = await Promise.all([
         HackClubAiClient.completion(
-          "You are the Market Analyst Agent. Estimate the target customer segment, urgency, and whether the issue is local or global based on the analyst's report.",
-          `Analyst's report:\n\n${analystOutput}`
+          "You are the Market Research Agent. Expand the signal into market context, comparable solutions, possible substitutes, broader demand pattern, and relevant market observations.",
+          `Pain Point report:\n\n${painPointOutput}`
         ),
         HackClubAiClient.completion(
-          "You are the Validation Agent. Answer: Is this a real problem? Will they pay? Find willingness-to-pay clues.",
-          `Analyst's report:\n\n${analystOutput}`
+          "You are the Opportunity / Pitch Agent. Frame the output like a startup or VC brief: problem, customer, solution direction, wedge, monetization logic, and why now.",
+          `Pain Point report:\n\n${painPointOutput}`
         ),
         HackClubAiClient.completion(
-          "You are the Failure Historian Agent. Brainstorm similar startups or tools that tried to solve this and failed. Explain why they likely failed.",
-          `Analyst's report:\n\n${analystOutput}`
+          "You are the Market Reach & Monetization Agent. Estimate who the real customer is, how many people may face the problem, local vs broad reach, willingness to pay, and what kind of startup this could become.",
+          `Pain Point report:\n\n${painPointOutput}`
         ),
         HackClubAiClient.completion(
-          "You are the Risk Agent. Highlight legal, GTM, technical, or solo-founder risks associated with solving this pain point.",
-          `Analyst's report:\n\n${analystOutput}`
+          "You are the Risk Agent. Analyze founder risk, execution risk, regulatory risk, data risk, and whether the opportunity is too weak or too speculative.",
+          `Pain Point report:\n\n${painPointOutput}`
         )
       ]);
 
-      // 7. Synthesizer Agent
-      logger.info('Agent 7/7: Synthesizer running...');
+      // 8. Synthesizer Agent
+      logger.info('Agent 8/8: Synthesizer running...');
       const synthesizerPrompt = `
-You are the Insight Synthesizer Agent. Your job is to combine the outputs of the previous 6 specialized AI agents into a SINGLE highly-structured JSON object matching exactly this schema:
+You are the Insight Synthesizer Agent. Your job is to combine the outputs of the 7 previous specialized AI agents into a SINGLE highly-structured JSON object matching exactly this schema:
 
 {
   "painPointTitle": string,
@@ -80,16 +89,20 @@ You are the Insight Synthesizer Agent. Your job is to combine the outputs of the
 }
 
 RULES:
-- Never leave fields blank. If you lack evidence, write "Low confidence: [Reason]".
+- Never leave fields blank. If you lack evidence, infer intelligently or write "Low confidence: [Reason]".
+- Extract the best quote from the Thread Reader.
+- Integrate the Pitch Agent's wedge/monetization logic into 'hiddenInsight' and 'rootCause'.
+- Integrate the Reach Agent's sizing into 'customerSegment'.
 - Do not output Markdown formatting outside of the JSON payload.
 - Return ONLY valid JSON.
 
 Here is the input from the agents:
-Scout: ${scoutOutput}
-Analyst: ${analystOutput}
-Market: ${marketOutput}
-Validation: ${validationOutput}
-Historian: ${historianOutput}
+Thread Reader: ${threadReaderOutput}
+Emotion/Impact: ${emotionOutput}
+Pain Point: ${painPointOutput}
+Market Research: ${marketOutput}
+Pitch/Opportunity: ${pitchOutput}
+Market Reach: ${reachOutput}
 Risk: ${riskOutput}
       `;
 
@@ -98,6 +111,8 @@ Risk: ${riskOutput}
       // Clean potential markdown blocks
       if (synthResponse.startsWith('```json')) {
         synthResponse = synthResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+      } else if (synthResponse.startsWith('```')) {
+        synthResponse = synthResponse.replace(/```/g, '').trim();
       }
 
       let parsedData;
@@ -114,8 +129,15 @@ Risk: ${riskOutput}
         throw new Error(`Schema mismatch: ${validated.error.message}`);
       }
 
-      // Generate the text format required by the user
+      // Generate the exact text format required by the user
       const finalObj = validated.data;
+      
+      // Ensure sourceUrls contains the real URLs from the original signals if missing
+      const realUrls = signals.map(s => s.url).filter(Boolean) as string[];
+      if (finalObj.sourceUrls.length === 0 && realUrls.length > 0) {
+        finalObj.sourceUrls = realUrls;
+      }
+
       const formattedText = `PAIN POINT — ${finalObj.sourceCluster}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${finalObj.painPointTitle}
@@ -139,7 +161,7 @@ Solo Founder Risk: ${finalObj.soloFounderRisk}`;
 
     } catch (err: any) {
       logger.error('Research pipeline failed', err);
-      // Fallback object to satisfy schema
+      // Fallback object to satisfy schema gracefully
       return [{
         painPointTitle: "Failed to generate deep insights",
         sourceCluster: "Unknown",
@@ -152,7 +174,7 @@ Solo Founder Risk: ${finalObj.soloFounderRisk}`;
         customerSegment: "Unknown",
         willingnessToPay: "Unknown",
         failedAttempts: "Unknown",
-        hiddenInsight: "None",
+        hiddenInsight: "Unknown",
         whyNow: "Unknown",
         soloFounderRisk: "Unknown",
         marketType: "Unknown",

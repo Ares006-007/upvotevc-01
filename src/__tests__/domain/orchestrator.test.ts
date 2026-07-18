@@ -57,11 +57,12 @@ describe('AgentOrchestrator', () => {
     });
 
     vi.mocked(HackClubAiClient.completion)
-      .mockResolvedValueOnce('Scout output')
-      .mockResolvedValueOnce('Analyst output')
-      .mockResolvedValueOnce('Market output')
-      .mockResolvedValueOnce('Validation output')
-      .mockResolvedValueOnce('Historian output')
+      .mockResolvedValueOnce('Thread Reader output')
+      .mockResolvedValueOnce('Emotion output')
+      .mockResolvedValueOnce('Pain Point output')
+      .mockResolvedValueOnce('Market Research output')
+      .mockResolvedValueOnce('Pitch output')
+      .mockResolvedValueOnce('Reach output')
       .mockResolvedValueOnce('Risk output')
       .mockResolvedValueOnce(`\`\`\`json\n${mockValidJson}\n\`\`\``); // Synthesizer output with markdown
 
@@ -78,11 +79,12 @@ describe('AgentOrchestrator', () => {
 
   it('should trigger fallback behavior when Synthesizer returns invalid JSON', async () => {
     vi.mocked(HackClubAiClient.completion)
-      .mockResolvedValueOnce('Scout output')
-      .mockResolvedValueOnce('Analyst output')
+      .mockResolvedValueOnce('Thread output')
+      .mockResolvedValueOnce('Emotion output')
+      .mockResolvedValueOnce('Pain output')
       .mockResolvedValueOnce('Market output')
-      .mockResolvedValueOnce('Validation output')
-      .mockResolvedValueOnce('Historian output')
+      .mockResolvedValueOnce('Pitch output')
+      .mockResolvedValueOnce('Reach output')
       .mockResolvedValueOnce('Risk output')
       .mockResolvedValueOnce('I am sorry, as an AI I cannot do that.'); // Invalid JSON
 
