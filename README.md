@@ -57,6 +57,8 @@ npm run test:watch
 npm run test:coverage
 ```
 
+> **Testing Policy**: We enforce a minimum coverage standard of ~80% lines for core services (`src/clients` and `src/domain`). Tests mock external APIs to ensure they remain hermetic, fast, and offline-capable.
+
 ## API Usage Examples
 
 **Get Signals:**
