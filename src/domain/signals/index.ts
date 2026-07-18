@@ -1,4 +1,5 @@
-import { RedditClient } from '../../clients/reddit';
+import { RedditJsonClient } from '../../clients/redditJson';
+import { mapRedditPostToSignal } from '../../dto/reddit';
 import { NewsApiClient } from '../../clients/newsapi';
 import { MassiveClient } from '../../clients/massive';
 import { SignalDTO } from '../../dto/schemas';
@@ -14,11 +15,13 @@ export class SignalService {
     const query = options?.query || 'venture capital';
     
     // Fetch from all sources concurrently
-    const [redditSignals, newsSignals, marketSignals] = await Promise.all([
-      RedditClient.fetchSubreddit('wallstreetbets', limit),
+    const [redditPosts, newsSignals, marketSignals] = await Promise.all([
+      RedditJsonClient.fetchSubredditPosts('wallstreetbets', 'hot', limit),
       NewsApiClient.fetchNews(query, limit),
       MassiveClient.fetchMarketData('SPY') // Placeholder
     ]);
+
+    const redditSignals = redditPosts.map(mapRedditPostToSignal);
 
     // Flatten and optionally sort by date or apply custom domain rules
     const aggregated = [...redditSignals, ...newsSignals, ...marketSignals];

@@ -68,5 +68,15 @@ curl -X POST http://localhost:3000/api/insights \
   }'
 ```
 
+**Fetch Raw Reddit Subreddit (JSON API):**
+```bash
+curl -X GET "http://localhost:3000/api/reddit/subreddit?name=startups&sort=hot&limit=10"
+```
+
+**Fetch Raw Reddit Thread (JSON API):**
+```bash
+curl -X GET "http://localhost:3000/api/reddit/thread?subreddit=startups&postId=abc123"
+```
+
 ## Background Processing
 *Note:* Periodic fetching from these external endpoints can be orchestrated using a Vercel Cron Job hitting an internal authenticated endpoint, avoiding tying up standard synchronous API routes.
