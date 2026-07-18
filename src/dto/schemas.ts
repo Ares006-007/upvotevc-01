@@ -27,5 +27,26 @@ export const InsightSummarySchema = z.object({
   sentimentScore: z.number(),
 });
 
+export const VentureOpportunitySchema = z.object({
+  painPointTitle: z.string(),
+  sourceCluster: z.string(),
+  severityScore: z.number(),
+  confidenceScore: z.number(),
+  evidenceQuotes: z.array(z.string()),
+  sourceUrls: z.array(z.string()),
+  rootCause: z.string(),
+  realCustomer: z.string(),
+  customerSegment: z.string(),
+  willingnessToPay: z.string(),
+  failedAttempts: z.string(),
+  hiddenInsight: z.string(),
+  whyNow: z.string(),
+  soloFounderRisk: z.string(),
+  marketType: z.string(),
+  opportunityScore: z.number(),
+  formattedText: z.string().optional(), // Injected by synthesizer
+});
+
 export type SignalDTO = z.infer<typeof SignalSchema>;
 export type InsightSummaryDTO = z.infer<typeof InsightSummarySchema>;
+export type VentureOpportunityDTO = z.infer<typeof VentureOpportunitySchema>;
